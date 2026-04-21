@@ -1,5 +1,7 @@
 import requests
 import os
+import subprocess
+import tempfile
 
 def send_prompt(prompt, model="codellama"):
     """
@@ -38,18 +40,25 @@ def generate_code(instructions, language="Python", constraints=None):
         str: The generated code.
     """
     context = f"You are an expert {language} programmer. Generate high-quality {language} code based on the following instructions."
-    prompt = f"{context}\n\nInstructions: {instructions}\n\nExpected Output: Provide only the raw {language} code without any markdown formatting, comments, explanations, or extra whitespace. Start directly with the code.\n"
+    prompt = f"{context}\n\nInstructions: {instructions}\n\nExpected Output: Provide only the raw {language} code without any markdown formatting, comments, explanations, or extra whitespace. Start directly with the code and ensure proper indentation.\n"
     if constraints:
         prompt += f"Constraints: {constraints}\n"
     code = send_prompt(prompt)
-    # Clean the code
     code = code.strip()
-    # Remove any leading common indentation
-    lines = code.split('\n')
-    if lines:
-        # Find the minimum indentation of non-empty lines
-        min_indent = min(len(line) - len(line.lstrip()) for line in lines if line.strip())
-        code = '\n'.join(line[min_indent:] if line.strip() else line for line in lines)
+    
+    # Format with black if Python
+    if language.lower() == "python":
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            subprocess.run(['black', temp_file], capture_output=True)
+            with open(temp_file, 'r') as f:
+                code = f.read()
+            os.unlink(temp_file)
+        except Exception:
+            pass  # If black fails, use original
+    
     return code
 
 def generate_and_write_code(instructions, file_path, language="Python", constraints=None):

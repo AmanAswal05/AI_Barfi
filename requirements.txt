@@ -7,6 +7,7 @@ distlib==0.4.0
 filelock==3.29.0
 identify==2.6.19
 idna==3.11
+iniconfig==2.3.0
 markdown-it-py==4.0.0
 mdurl==0.1.2
 mypy_extensions==1.1.0
@@ -14,8 +15,10 @@ nodeenv==1.10.0
 packaging==26.1
 pathspec==1.0.4
 platformdirs==4.9.6
+pluggy==1.6.0
 pre_commit==4.5.1
 Pygments==2.20.0
+pytest==9.0.3
 python-discovery==1.2.2
 python-dotenv==1.2.2
 pytokens==0.4.1

@@ -1,2 +1,2 @@
-def is_palindrome(string):
-    return string == string[::-1]
+def get_max(my_list):
+    return max(my_list)

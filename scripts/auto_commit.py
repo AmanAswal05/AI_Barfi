@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
 Auto-commit script for AI-generated changes.
-Stages all changes, commits with a standard message, and pushes to remote.
-Only commits if there are actual changes.
+Runs tests, stages all changes, commits with a standard message, and pushes to remote.
+Only commits if tests pass and there are changes.
 """
 
 import subprocess
 import sys
+import os
 
 def run_command(command, cwd=None):
     """Run a shell command and return success status."""
@@ -16,8 +17,26 @@ def run_command(command, cwd=None):
     except Exception as e:
         return False, "", str(e)
 
+def run_tests():
+    """Run pytest and return success status."""
+    print("Running tests...")
+    success, stdout, stderr = run_command("python -m pytest tests/ -v")
+    if success:
+        print("All tests passed.")
+        return True
+    else:
+        print("Tests failed!")
+        print("STDOUT:", stdout)
+        print("STDERR:", stderr)
+        return False
+
 def auto_commit():
     """Perform automatic commit and push."""
+    # Run tests first
+    if not run_tests():
+        print("Aborting commit due to test failures.")
+        return False
+    
     # Check for changes
     success, stdout, stderr = run_command("git status --porcelain")
     if not success:

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  ai-dashboard:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - /tmp/ollama:/root/.ollama  # Assuming Ollama data
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - /tmp/ollama:/root/.ollama
+    command: serve

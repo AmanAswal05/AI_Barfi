@@ -2,6 +2,11 @@ import requests
 import os
 import subprocess
 import tempfile
+import logging
+
+# Set up logging
+logging.basicConfig(filename='ai_actions.log', level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 def send_prompt(prompt, model="codellama"):
     """
@@ -21,10 +26,14 @@ def send_prompt(prompt, model="codellama"):
         "stream": False
     }
     try:
+        logging.info(f"Sending prompt to {model}: {prompt[:100]}...")
         response = requests.post(url, json=data)
         response.raise_for_status()
-        return response.json()["response"]
+        result = response.json()["response"]
+        logging.info(f"Received response from {model}, length: {len(result)}")
+        return result
     except requests.exceptions.RequestException as e:
+        logging.error(f"Error communicating with Ollama: {e}")
         return f"Error communicating with Ollama: {e}"
 
 def clean_code_output(code):
@@ -58,10 +67,12 @@ def generate_code(instructions, language="Python", constraints=None):
         str: The generated code.
     """
     context = f"You are an expert {language} programmer. Generate high-quality {language} code based on the following instructions."
-    prompt = f"{context}\n\nInstructions: {instructions}\n\nExpected Output: Provide only the raw {language} code without any markdown formatting, comments, explanations, or extra whitespace. Start directly with the code and ensure proper indentation.\n"
+    prompt = f"{context}\n\nInstructions: {instructions}\n\nImportant: Respond ONLY with the raw {language} code. Do not include markdown code blocks (```), explanations, comments, or any text outside the code. The code must be syntactically correct and properly indented. No introductions or conclusions.\n"
     if constraints:
         prompt += f"Constraints: {constraints}\n"
     code = send_prompt(prompt)
+    logging.info(f"Generated code for instructions: {instructions[:50]}...")
+    
     code = clean_code_output(code)
     
     # Format with black if Python
@@ -93,8 +104,10 @@ def generate_tests(code, language="Python"):
     if language.lower() != "python":
         return ""  # Only support Python tests for now
     
-    prompt = f"Write comprehensive pytest tests for the following Python code. Include edge cases and ensure the tests are complete and correct.\n\nCode:\n{code}\n\nProvide only the test code without explanations or markdown."
+    prompt = f"Write comprehensive pytest tests for the following Python code. Include edge cases and ensure the tests are complete and correct.\n\nCode:\n{code}\n\nRespond ONLY with the raw Python test code. Do not include markdown, explanations, or any text outside the code. Start directly with imports and test functions."
     test_code = send_prompt(prompt)
+    logging.info(f"Generated tests for code snippet")
+    
     test_code = clean_code_output(test_code)
     
     # Format with black
@@ -110,6 +123,12 @@ def generate_tests(code, language="Python"):
         pass
     
     return test_code
+
+def save_to_history(instructions, code, file_path):
+    """Save generation history to a file."""
+    with open('ai_history.txt', 'a') as f:
+        f.write(f"Instructions: {instructions}\nFile: {file_path}\nCode:\n{code}\n---\n")
+    logging.info(f"Saved generation history for {file_path}")
 
 def generate_and_write_code(instructions, file_path, language="Python", constraints=None, generate_tests_flag=True):
     """
@@ -145,6 +164,8 @@ def generate_and_write_code(instructions, file_path, language="Python", constrai
         print(f"Backup created: {backup_path}")
     
     # Write the code
+    save_to_history(instructions, code, file_path)
+    logging.info(f"Writing code to {file_path}")
     with open(file_path, 'w') as f:
         f.write(code)
     
@@ -167,6 +188,7 @@ def generate_and_write_code(instructions, file_path, language="Python", constrai
             
             with open(test_path, 'w') as f:
                 f.write(test_code)
+            logging.info(f"Tests written to {test_path}")
             print(f"Tests written to {test_path}")
     
     return f"Code successfully written to {file_path}"

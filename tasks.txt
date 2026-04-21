@@ -1,1 +1,4 @@
-src/utils.py | Write a function to find the maximum value in a list | Use built-in max
+# Example tasks
+src/example.py | Write a function to calculate fibonacci numbers | Use recursion and memoization
+src/calculator.py | Create a simple calculator class | Include add, subtract, multiply, divide methods
+tests/test_example.py | Write tests for the fibonacci function | Include edge cases
